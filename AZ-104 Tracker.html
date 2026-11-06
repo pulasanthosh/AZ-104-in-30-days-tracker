@@ -1,0 +1,835 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>AZ-104 Tracker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a ledger. Sticky day strip on top, phase headings, one collapsible sheet per day, checklist rows with a type tag, note and links. */
+:root{
+  --bg:#f2f5f8; --surface:#ffffff; --ink:#13202c; --muted:#58697a; --line:#d8e0e8;
+  --accent:#0a58b5; --accent-soft:#e2eefb;
+  --depth:#8f5300; --depth-soft:#fff0d3;
+  --lab:#17703f; --lab-soft:#dcf2e6;
+  --arch:#5b3fb0; --arch-soft:#ece7fb;
+  --vid:#a3242f; --vid-soft:#fde4e6;
+  --recall:#4a5a69; --recall-soft:#e8edf2;
+  --ok:#17703f; --track:#dfe6ed;
+  --f-display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d141a; --surface:#141d25; --ink:#e5ecf2; --muted:#93a3b2; --line:#26323d;
+  --accent:#6db1ff; --accent-soft:#12273d;
+  --depth:#f0b45a; --depth-soft:#33270f;
+  --lab:#5fd09a; --lab-soft:#10301f;
+  --arch:#b9a6ff; --arch-soft:#241e45;
+  --vid:#ff9aa2; --vid-soft:#3a1519;
+  --recall:#a9b7c4; --recall-soft:#1d2833;
+  --ok:#5fd09a; --track:#22303c; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0d141a; --surface:#141d25; --ink:#e5ecf2; --muted:#93a3b2; --line:#26323d;
+  --accent:#6db1ff; --accent-soft:#12273d;
+  --depth:#f0b45a; --depth-soft:#33270f;
+  --lab:#5fd09a; --lab-soft:#10301f;
+  --arch:#b9a6ff; --arch-soft:#241e45;
+  --vid:#ff9aa2; --vid-soft:#3a1519;
+  --recall:#a9b7c4; --recall-soft:#1d2833;
+  --ok:#5fd09a; --track:#22303c; color-scheme:dark;}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 64px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:30}
+.wrap{max-width:980px;margin:0 auto}
+a{color:var(--accent)}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;margin:0;text-wrap:balance;letter-spacing:.005em}
+h1{font-size:2rem;line-height:1.1}
+.sub{color:var(--muted);margin:6px 0 0;max-width:64ch}
+.top{display:flex;flex-wrap:wrap;gap:16px 32px;justify-content:space-between;align-items:flex-end}
+.start{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--muted)}
+.start input{font:inherit;font-family:var(--f-mono);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:6px 8px}
+.status{font-family:var(--f-mono);font-size:.72rem;color:var(--muted);min-height:1em}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;margin-top:20px}
+.totals{display:flex;flex-wrap:wrap;gap:12px 36px;margin-bottom:14px}
+.tot{min-width:0}
+.tot b{font-family:var(--f-mono);font-weight:500;font-size:1.35rem}
+.tot span{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.bar{height:8px;background:var(--track);border-radius:2px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .25s}
+.domains{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px 20px}
+.dom{min-width:0}
+.dom .row{display:flex;justify-content:space-between;gap:8px;font-size:.8rem;margin-bottom:5px}
+.dom .row em{font-style:normal;color:var(--muted);font-family:var(--f-mono);font-size:.72rem;white-space:nowrap}
+.dom .row span{min-width:0}
+
+.strip{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);padding:10px 0;margin-top:14px;border-bottom:1px solid var(--line);
+  display:flex;gap:6px;overflow-x:auto;align-items:center}
+.chip{flex:0 0 auto;font-family:var(--f-mono);font-size:.78rem;padding:5px 9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:4px;cursor:pointer;text-decoration:none;position:relative}
+.chip.part{border-color:var(--accent);color:var(--accent)}
+.chip.done{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.chip.today{outline:2px solid var(--depth);outline-offset:1px}
+.filters{display:flex;gap:6px;margin-left:auto;padding-left:10px;flex:0 0 auto}
+.filters button{font:inherit;font-size:.75rem;padding:5px 9px;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:4px;cursor:pointer;white-space:nowrap}
+.filters button[aria-pressed="true"]{color:var(--ink);border-color:var(--ink)}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.grp{font-family:var(--f-display);font-size:1rem;margin:14px 0 2px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.grp em{font-style:normal;font-family:var(--f-mono);font-size:.75rem;color:var(--muted)}
+.phase{margin-top:30px;padding-bottom:6px;border-bottom:2px solid var(--ink);font-size:1.15rem}
+details.day{background:var(--surface);border:1px solid var(--line);border-radius:6px;margin-top:12px;scroll-margin-top:calc(env(safe-area-inset-top,0px) + 64px)}
+details.day>summary{list-style:none;cursor:pointer;padding:14px 16px;display:grid;grid-template-columns:auto 1fr auto;gap:2px 14px;align-items:center}
+details.day>summary::-webkit-details-marker{display:none}
+.dn{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);grid-row:span 2;text-align:center;border-right:1px solid var(--line);padding-right:14px;line-height:1.3;min-width:3.2ch}
+.dn b{display:block;font-size:1.2rem;color:var(--ink);font-weight:500}
+.dt{font-family:var(--f-display);font-size:1.15rem;font-weight:600;min-width:0}
+.dmeta{font-size:.78rem;color:var(--muted);min-width:0}
+.dcount{font-family:var(--f-mono);font-size:.78rem;color:var(--muted);grid-row:span 2;text-align:right}
+details.day[open]>summary{border-bottom:1px solid var(--line)}
+.body{padding:14px 16px 18px}
+.plan{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.plan span{font-size:.75rem;font-family:var(--f-mono);background:var(--recall-soft);color:var(--recall);padding:3px 8px;border-radius:3px}
+.drill{font-family:var(--f-mono);font-size:.76rem;color:var(--muted);background:var(--bg);border:1px dashed var(--line);border-radius:4px;padding:8px 10px;margin:0 0 12px;overflow-x:auto;white-space:nowrap}
+.items{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.it{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:9px 0;border-top:1px solid var(--line);align-items:start}
+.it:first-child{border-top:0}
+.it label{display:grid;grid-template-columns:auto auto 1fr;gap:10px;align-items:start;cursor:pointer;min-width:0}
+.it input[type=checkbox]{width:18px;height:18px;margin:2px 0 0;accent-color:var(--accent)}
+.tag{font-family:var(--f-mono);font-size:.64rem;text-transform:uppercase;letter-spacing:.08em;padding:2px 6px;border-radius:3px;margin-top:3px;white-space:nowrap;font-style:normal}
+.t-x{background:var(--accent-soft);color:var(--accent)}
+.t-d{background:var(--depth-soft);color:var(--depth)}
+.t-l{background:var(--lab-soft);color:var(--lab)}
+.t-a{background:var(--arch-soft);color:var(--arch)}
+.t-v{background:var(--vid-soft);color:var(--vid)}
+.t-q{background:var(--recall-soft);color:var(--recall)}
+.tx{min-width:0}
+.tx b{font-weight:500;display:block}
+.tx small{display:block;color:var(--muted);font-size:.82rem;margin-top:1px}
+.it.is-done .tx b{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+.lks{display:flex;flex-direction:column;gap:2px;align-items:flex-end}
+.lk{font-size:.75rem;font-family:var(--f-mono);white-space:nowrap;padding-top:3px}
+textarea{width:100%;min-height:64px;margin-top:12px;font:inherit;font-size:.85rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:8px 10px;resize:vertical}
+.nl{display:block;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-top:12px}
+.hide{display:none!important}
+h2.sec{font-size:1.4rem;margin-top:40px}
+.note{font-size:.82rem;color:var(--muted);margin:6px 0 0;max-width:70ch}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.78rem;color:var(--muted);margin-top:12px}
+.legend span{display:flex;align-items:center;gap:6px}
+footer{margin-top:36px;font-size:.78rem;color:var(--muted);max-width:76ch;display:flex;flex-direction:column;gap:8px}
+footer p{margin:0}
+@media (max-width:560px){
+  h1{font-size:1.65rem}
+  details.day>summary{grid-template-columns:auto 1fr}
+  .dcount{grid-column:2;grid-row:auto;text-align:left}
+  .it{grid-template-columns:1fr}
+  .lks{flex-direction:row;gap:14px;padding-left:30px;align-items:flex-start}
+  .it label{grid-template-columns:auto 1fr}
+  .it label .tag{grid-column:2;justify-self:start;grid-row:1}
+  .it label input{grid-row:1/span 2}
+  .it label .tx{grid-column:2}
+  .filters{display:none}
+}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>AZ-104 in 30 days</h1>
+      <p class="sub">A slower pace with room to read Microsoft Learn and watch videos: 3.5 to 4 hours a day, about <span id="tothrs">110</span> hours in all. Every objective from the official outline, plus the depth a five-year IaaS engineer is expected to show. If you fall behind, carry unchecked items to the next day.</p>
+    </div>
+    <div class="start">
+      <label for="start">Day 1 starts</label>
+      <input type="date" id="start">
+      <div class="status" id="status"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="totals">
+      <div class="tot"><b id="t-x">0/0</b><span>Exam objectives</span></div>
+      <div class="tot"><b id="t-all">0/0</b><span>All tasks</span></div>
+      <div class="tot"><b id="t-days">0/30</b><span>Days complete</span></div>
+      <div class="tot"><b id="t-hrs">0 h</b><span>Study hours done</span></div>
+    </div>
+    <div class="bar" aria-hidden="true"><i id="b-all"></i></div>
+    <div class="domains" id="domains" style="margin-top:16px"></div>
+    <div class="legend">
+      <span><i class="tag t-x">Exam</i> in the official skills outline</span>
+      <span><i class="tag t-d">Depth</i> beyond the exam, expected at your level</span>
+      <span><i class="tag t-v">Watch</i> video slot</span>
+      <span><i class="tag t-l">Lab</i> hands-on</span>
+      <span><i class="tag t-q">Recall</i> test yourself</span>
+      <span><i class="tag t-a">Architect</i> AZ-305 and interview lens</span>
+    </div>
+  </div>
+
+  <div class="strip" id="strip"></div>
+  <div id="days"></div>
+
+  <h2 class="sec">After the exam: AZ-305</h2>
+  <p class="note">At this pace plan about four to five weeks. Objectives below come from the AZ-305 study guide as of 17 April 2026. Write each design decision as a half-page: requirement, options, choice, cost, risk. Those pages double as answers to HLD and LLD interview questions.</p>
+  <div id="p2"></div>
+
+  <footer>
+    <p>Objectives for AZ-104 follow the skills outline on Microsoft's study guide (the version effective 26 October 2023, the latest that guide lists). Before you book, open the <a href="https://learn.microsoft.com/en-us/credentials/certifications/exams/az-104/" target="_blank" rel="noopener">exam page</a> and confirm nothing was added. A pass is 700 or above. Microsoft's free practice assessment is at <a href="https://aka.ms/az104-pa" target="_blank" rel="noopener">aka.ms/az104-pa</a> and the exam sandbox at <a href="https://aka.ms/examdemo" target="_blank" rel="noopener">aka.ms/examdemo</a>.</p>
+    <p>Video slots link to a YouTube search for that day's topic, so you choose the channel. The study guide itself points to the <a href="https://learn.microsoft.com/en-us/shows/exam-readiness-zone/?terms=az-104" target="_blank" rel="noopener">Exam Readiness Zone</a> and <a href="https://azure.microsoft.com/resources/videos/azure-friday/" target="_blank" rel="noopener">Azure Friday</a>. Prefer videos recorded in the last year or two, because portal screens and tiers change.</p>
+    <p>Notes on tiers, limits and retirements are from memory of the docs. When a number matters, open the linked page.</p>
+  </footer>
+</div>
+
+<script>
+(function(){
+var BASE="https://learn.microsoft.com/en-us";
+var L={
+entra:"/entra/identity/",rbac:"/azure/role-based-access-control/overview",rbacscope:"/azure/role-based-access-control/scope-overview",
+mi:"/entra/identity/managed-identities-azure-resources/overview",kv:"/azure/key-vault/",
+policy:"/azure/governance/policy/",policyeff:"/azure/governance/policy/concepts/effect-basics",
+locks:"/azure/azure-resource-manager/management/lock-resources",tags:"/azure/azure-resource-manager/management/tag-resources",
+mg:"/azure/governance/management-groups/",rg:"/azure/azure-resource-manager/management/manage-resource-groups-portal",
+cost:"/azure/cost-management-billing/",advisor:"/azure/advisor/",calc:"https://azure.microsoft.com/en-us/pricing/calculator/",
+storage:"/azure/storage/",redund:"/azure/storage/common/storage-redundancy",sas:"/azure/storage/common/storage-sas-overview",
+azcopy:"/azure/storage/common/storage-use-azcopy-v10",blobs:"/azure/storage/blobs/",lifecycle:"/azure/storage/blobs/lifecycle-management-overview",
+files:"/azure/storage/files/",filesync:"/azure/storage/file-sync/file-sync-introduction",
+bicep:"/azure/azure-resource-manager/bicep/overview",arm:"/azure/azure-resource-manager/templates/",
+vm:"/azure/virtual-machines/",disks:"/azure/virtual-machines/managed-disks-overview",ade:"/azure/virtual-machines/disk-encryption-overview",
+avail:"/azure/virtual-machines/availability",vmss:"/azure/virtual-machine-scale-sets/",resmover:"/azure/resource-mover/overview",um:"/azure/update-manager/",
+acr:"/azure/container-registry/",aci:"/azure/container-instances/",aca:"/azure/container-apps/",appsvc:"/azure/app-service/",
+vnet:"/azure/virtual-network/",peering:"/azure/virtual-network/virtual-network-peering-overview",udr:"/azure/virtual-network/virtual-networks-udr-overview",
+nsg:"/azure/virtual-network/network-security-groups-overview",bastion:"/azure/bastion/",svcep:"/azure/virtual-network/virtual-network-service-endpoints-overview",
+pe:"/azure/private-link/private-endpoint-overview",dns:"/azure/dns/",lb:"/azure/load-balancer/",agw:"/azure/application-gateway/",
+frontdoor:"/azure/frontdoor/",tm:"/azure/traffic-manager/",firewall:"/azure/firewall/",vpn:"/azure/vpn-gateway/",er:"/azure/expressroute/",vwan:"/azure/virtual-wan/",nat:"/azure/nat-gateway/",
+monitor:"/azure/azure-monitor/",alerts:"/azure/azure-monitor/alerts/alerts-overview",nw:"/azure/network-watcher/",
+backup:"/azure/backup/",rsv:"/azure/backup/backup-azure-recovery-services-vault-overview",asr:"/azure/site-recovery/",
+defender:"/azure/defender-for-cloud/",migrate:"/azure/migrate/",arc:"/azure/azure-arc/",local:"/azure/azure-local/",
+caf:"/azure/cloud-adoption-framework/",waf:"/azure/well-architected/",arch:"/azure/architecture/",
+cli:"/cli/azure/",readyzone:"/shows/exam-readiness-zone/?terms=az-104",pa:"https://aka.ms/az104-pa",sandbox:"https://aka.ms/examdemo",
+exam:"/credentials/certifications/exams/az-104/",az305:"/credentials/certifications/exams/az-305/"
+};
+function href(k){if(!k)return null;var p=L[k];if(!p)return null;return p.indexOf("http")===0?p:BASE+p}
+var VN="Pick one walkthrough of 30 to 40 minutes. Pause and repeat the steps in the portal.";
+function X(tx,n,k){return{t:"x",tx:tx,n:n,k:k}}
+function D(tx,n,k){return{t:"d",tx:tx,n:n,k:k}}
+function B(tx,n,k){return{t:"l",tx:tx,n:n,k:k}}
+function Q(tx,n,k){return{t:"q",tx:tx,n:n,k:k}}
+function A(tx,n,k){return{t:"a",tx:tx,n:n,k:k}}
+function V(tx,q,n,k){return{t:"v",tx:tx,n:n||VN,q:q,k:k}}
+
+var DOMAINS=[
+ {id:"id",name:"Identities and governance",w:"20–25%"},
+ {id:"st",name:"Storage",w:"15–20%"},
+ {id:"co",name:"Compute",w:"20–25%"},
+ {id:"nw",name:"Virtual networking",w:"15–20%"},
+ {id:"mo",name:"Monitor and maintain",w:"10–15%"}
+];
+var PH={ori:"Start here",id:"Identities and governance",st:"Storage",co:"Compute",nw:"Virtual networking",mo:"Monitor and maintain",rev:"Consolidate and test"};
+var STD=[["Read Microsoft Learn docs",75],["Watch a video",40],["Hands-on lab",60],["Recall and CLI drills",30],["Architect lens",15]];
+
+var DAYS=[
+{n:1,title:"Set up, baseline and book the exam",dom:"ori",
+ plan:[["Read the outline",30],["Baseline practice test",60],["Watch exam prep video",40],["Lab setup",50],["Notes and stories",30]],
+ drill:"az login · az account show · az account set --subscription · az group create / delete · Connect-AzAccount",
+ items:[
+ Q("Book the exam for a date after Day 30","A fixed date keeps a 30-day plan honest. Leave 3 to 5 days of buffer after Day 30.","exam"),
+ X("Read the official skills outline once, top to bottom","Five domains: identities and governance 20–25%, storage 15–20%, compute 20–25%, networking 15–20%, monitor and maintain 10–15%.","exam"),
+ Q("Take Microsoft's practice assessment cold, before studying","The score does not matter. You are finding which domains cost you marks. Write them down.","pa"),
+ V("Watch Microsoft's AZ-104 exam prep video","AZ-104 exam preparation Azure Administrator","Linked from the study guide. Also use it to learn the question styles.","readyzone"),
+ B("Set up your lab: a personal or trial subscription, Cloud Shell, Azure CLI and Azure PowerShell on your laptop","Use a subscription where you can delete things freely. Create a budget alert before anything else.","cli"),
+ B("Start the lab habit: one resource group per lab, tagged lab=az104, deleted at the end of the day","Prevents surprise charges. Practise the clean-up from the CLI with az group delete.",null),
+ Q("Create a notes file with one page per domain titled “what I got wrong”","Every miss in a lab or quiz goes here, with the rule in your own words.",null),
+ A("Write down five real Azure stories from your work to reuse in interviews","A migration wave plan, a hosting decision, a DR design, an incident, a standard you introduced. Add detail as you study.",null)
+]},
+
+{n:2,title:"Entra users, groups and licences",dom:"id",plan:STD,
+ drill:"New-MgUser · az ad user create · az ad group create · az ad group member add · az ad user list",
+ items:[
+ X("Create users and groups","Portal, bulk CSV create, PowerShell and CLI. Know cloud-only, synced and guest users.","entra"),
+ X("Manage user and group properties","Assigned vs dynamic membership (dynamic needs Entra ID P1). Security vs Microsoft 365 groups. Role-assignable groups.","entra"),
+ X("Manage licences in Microsoft Entra ID","Group-based licensing. A usage location must be set before a licence can be assigned. Know how licence errors show up.","entra"),
+ D("Tenant, directory and subscription: how they relate","One tenant can trust many subscriptions. A subscription trusts exactly one tenant. Entra roles manage the directory, Azure RBAC manages resources.","entra"),
+ D("Bulk operations and Microsoft Graph PowerShell basics","Bulk create and bulk invite from CSV. Graph PowerShell replaced the old AzureAD module.","entra"),
+ V("Watch: Entra ID users, groups and licensing","Microsoft Entra ID users groups licenses AZ-104"),
+ B("Lab: bulk-create 5 users from a CSV, build a dynamic group on department, assign a licence to the group",null,null),
+ Q("Recall: when does a dynamic group fail to populate, and what blocks a licence from applying?",null,null),
+ A("Design naming and group standards for 2,000 users: group types, ownership and lifecycle",null,null)
+]},
+
+{n:3,title:"External users, SSPR and hybrid identity",dom:"id",plan:STD,
+ drill:"az ad user create (guest) · New-MgInvitation · Get-MgUser -Filter \"userType eq 'Guest'\"",
+ items:[
+ X("Manage external users","B2B invitations, redemption, guest vs member user type, external collaboration settings.","entra"),
+ X("Configure self-service password reset (SSPR)","Scope: none, selected, all. Number of methods required. Registration. Writeback to on-prem needs Entra Connect and P1.","entra"),
+ D("MFA, Conditional Access, PIM and security defaults","Know what each does and the licence tier it needs. PIM makes assignments eligible and time-boxed.","entra"),
+ D("Hybrid identity: Entra Connect Sync vs Cloud Sync, PHS vs PTA vs federation","Be able to justify a choice for a company with on-prem AD.","entra"),
+ D("Entra Domain Services vs AD DS on a VM","When you need Kerberos, LDAP and GPO without managing domain controllers.","entra"),
+ V("Watch: Entra SSPR, Conditional Access and hybrid identity","Microsoft Entra SSPR Conditional Access hybrid identity explained"),
+ B("Lab: invite a guest, enable SSPR for a pilot group, create a Conditional Access policy in report-only mode",null,null),
+ Q("Recall: which features need P1 or P2? What does password writeback need?",null,null),
+ A("Design hybrid identity for 2,000 users: sync method, auth method, break-glass accounts, MFA policy",null,null)
+]},
+
+{n:4,title:"Azure RBAC: roles, scopes, assignments",dom:"id",plan:STD,
+ drill:"az role assignment create --assignee --role --scope · az role assignment list --all · az role definition list",
+ items:[
+ X("Manage built-in Azure roles","Owner, Contributor, Reader, User Access Administrator. Control-plane roles are separate from data-plane roles such as Storage Blob Data Contributor.","rbac"),
+ X("Assign roles at different scopes","Management group, subscription, resource group, resource. Assignments inherit downward. An assignment is principal plus role plus scope.","rbacscope"),
+ X("Interpret access assignments","Use Access control (IAM): Check access and Role assignments. Effective permissions are the union of allows. A deny assignment wins over an allow.","rbac"),
+ D("Control plane vs data plane","Why Contributor on a storage account does not let you read its blobs with Entra authentication.","rbac"),
+ V("Watch: Azure RBAC explained","Azure RBAC role assignments scope explained AZ-104"),
+ B("Lab: Reader at subscription, Contributor on one resource group, then sign in as a second user and test what works",null,null),
+ Q("Recall: a user is Contributor on a resource group but cannot grant access. Why? Which role can?",null,null),
+ A("Draft the role model for a platform team and app teams: scopes, groups, PIM",null,null)
+]},
+
+{n:5,title:"Custom roles, managed identities, Key Vault",dom:"id",plan:STD,
+ drill:"az role definition create --role-definition role.json · az vm identity assign · az keyvault secret set / show",
+ items:[
+ D("Custom roles","Actions, NotActions, DataActions, AssignableScopes. Write one for a VM operator.","rbac"),
+ D("Managed identities: system-assigned vs user-assigned","Removes stored credentials. One user-assigned identity can serve many resources.","mi"),
+ D("Key Vault: RBAC vs access policies, soft delete, purge protection","Used by Azure Disk Encryption and customer-managed keys. Know the permission model change.","kv"),
+ D("Elevate access for a Global Administrator","Grants User Access Administrator at root scope. Know why it is a break-glass action.","rbac"),
+ V("Watch: managed identities and Key Vault","Azure managed identity Key Vault explained"),
+ B("Lab: custom VM-operator role, a VM with a managed identity reading a Key Vault secret",null,null),
+ Q("Recall: what happens to a system-assigned identity when the VM is deleted?",null,null),
+ A("When would you use a user-assigned identity instead of a system-assigned one? Write two scenarios",null,null)
+]},
+
+{n:6,title:"Azure Policy",dom:"id",plan:STD,
+ drill:"az policy definition create · az policy assignment create · az policy state list · az policy remediation create",
+ items:[
+ X("Implement and manage Azure Policy","Definition, initiative, assignment, scope, exclusions. Remediation tasks use a managed identity. Existing resources are only fixed by remediation.","policy"),
+ D("Policy effects and evaluation","Audit, Deny, Modify, DeployIfNotExists, AuditIfNotExists, Disabled. Deny and Modify act at request time. Know when compliance data refreshes.","policyeff"),
+ D("Initiatives, exemptions and compliance state","Group policies into an initiative. An exemption is different from an exclusion.","policy"),
+ D("Common estate policies","Allowed locations, allowed SKUs, require a tag, inherit a tag, deploy diagnostic settings to a workspace.","policy"),
+ V("Watch: Azure Policy deep dive","Azure Policy explained effects initiatives remediation"),
+ B("Lab: Deny on allowed locations, Modify to add a tag, DeployIfNotExists for diagnostics, then run a remediation",null,null),
+ Q("Recall: Policy vs RBAC. Which answers who can do something and which answers what is allowed?",null,null),
+ A("Pick five policies every landing zone should have and say where each is assigned",null,"caf")
+]},
+
+{n:7,title:"Locks, tags, resource groups, subscriptions, management groups",dom:"id",plan:STD,
+ drill:"az lock create --lock-type CanNotDelete · az tag update · az group create · az resource move · az account management-group create",
+ items:[
+ X("Configure resource locks","CanNotDelete and ReadOnly. Inherited by child resources. A lock applies even to Owner. ReadOnly can break actions such as listing storage keys.","locks"),
+ X("Apply and manage tags","Name and value pairs. Not inherited by default. Use Policy (Modify) to copy tags down. Tags drive cost reporting.","tags"),
+ X("Manage resource groups","The group's location holds metadata only. Resources can be in other regions. Moving a resource changes its resource ID. Deleting the group deletes everything in it.","rg"),
+ X("Manage subscriptions","Rename, change directory, transfer billing, cancel, view quotas and request increases.","cost"),
+ X("Configure management groups","Up to six levels below the tenant root group. Policy and RBAC inherit. Move subscriptions between groups.","mg"),
+ D("Resource Graph, Service Health and Resource Health","Query inventory at scale with KQL. Know which tool answers “is Azure down or is my VM down”.","monitor"),
+ V("Watch: management groups, subscriptions and resource organisation","Azure management groups subscriptions resource groups explained"),
+ B("Lab: build a management group tree, add a lock, move a resource between groups, use tags for a cost view",null,null),
+ Q("Recall: order of checks when a user tries to delete a VM: RBAC, policy, lock. What blocks it and why?",null,null),
+ A("Draw the management group hierarchy for a landing zone: platform, landing zones, sandbox, decommissioned",null,"caf")
+]},
+
+{n:8,title:"Cost management and domain checkpoint",dom:"id",plan:STD,
+ drill:"az consumption budget create · az advisor recommendation list · az costmanagement export create",
+ items:[
+ X("Manage costs with alerts, budgets and Azure Advisor","A budget alerts but does not stop spend unless an action group runs automation. Advisor pillars: cost, security, reliability, operational excellence, performance.","advisor"),
+ D("Cost analysis, exports and allocation by tag","Group by tag, resource group and service. Scheduled exports for finance.","cost"),
+ D("Pricing levers","Reservations, savings plans, Azure Hybrid Benefit, Spot, dev/test pricing, right-sizing, auto-shutdown.","cost"),
+ D("Pricing calculator","Estimate a 20-VM workload three ways: pay as you go, 3-year reservation, with Hybrid Benefit.","calc"),
+ V("Watch: Azure Cost Management and pricing","Azure Cost Management budgets reservations savings plan explained"),
+ B("Lab: 80% budget alert with an action group, review Advisor recommendations, build a cost analysis view by tag",null,null),
+ Q("Checkpoint: 20 practice questions on identities and governance. Log every miss in your notes file","Use the free practice assessment or the knowledge checks at the end of the Learn modules.","pa"),
+ A("Explain to a finance lead how you would stop cloud spend running away without blocking teams",null,null)
+]},
+
+{n:9,title:"Storage accounts, redundancy, encryption",dom:"st",plan:STD,
+ drill:"az storage account create --sku Standard_RAGZRS · az storage account update · az storage account show --query encryption",
+ items:[
+ X("Create and configure storage accounts","Standard general purpose v2 vs premium block, file and page. Hierarchical namespace for Data Lake. Naming and endpoints.","storage"),
+ X("Configure Azure Storage redundancy","LRS, ZRS, GRS, GZRS and their read-access variants. Premium accounts are LRS or ZRS. Know account failover.","redund"),
+ X("Configure storage account encryption","Always on at rest. Microsoft-managed vs customer-managed keys in Key Vault. Infrastructure encryption is chosen at creation.","storage"),
+ D("Account failover, immutable storage (WORM), Defender for Storage","Know when you would use each.","storage"),
+ V("Watch: Azure Storage accounts and redundancy","Azure storage accounts redundancy LRS ZRS GRS GZRS explained"),
+ B("Lab: create a read-access geo-zone-redundant account, change redundancy, inspect encryption settings",null,null),
+ Q("Recall: which redundancy gives both zone and geo protection? Which can you not change in place?",null,null),
+ A("Choose redundancy for backups, app data and logs. Say what each costs you in RPO",null,null)
+]},
+
+{n:10,title:"Storage access: firewalls, SAS, keys, identity",dom:"st",plan:STD,
+ drill:"az storage container policy create · az storage container generate-sas · az storage account network-rule add · az storage account keys renew",
+ items:[
+ X("Configure Azure Storage firewalls and virtual networks","Default deny, then VNet rules and IP rules. Trusted Azure services exception. Private endpoints.","storage"),
+ X("Create and use SAS tokens","Account, service and user delegation SAS. User delegation is signed with Entra credentials, not the account key. Enforce HTTPS and short expiry.","sas"),
+ X("Configure stored access policies","Lets you change or revoke a service SAS without rotating keys. Up to five per container. Not usable with account SAS or user delegation SAS.","sas"),
+ X("Manage access keys","Two keys for rotation. You can disable shared key access and require Entra authorization.","storage"),
+ X("Configure identity-based access for Azure Files","AD DS, Entra Domain Services, or Entra Kerberos for hybrid identities. Share-level RBAC plus NTFS permissions on files.","files"),
+ V("Watch: storage security, SAS and access keys","Azure storage SAS stored access policy access keys explained"),
+ B("Lab: lock the account to your VNet, create a service SAS from a stored policy and then revoke it, rotate a key",null,null),
+ Q("Recall: which SAS can you revoke without touching keys? What does the trusted services exception allow?",null,null),
+ A("Write the access standard for storage: no anonymous access, no shared key, private endpoints. Say what breaks",null,null)
+]},
+
+{n:11,title:"Blob: containers, tiers, lifecycle, replication",dom:"st",plan:STD,
+ drill:"az storage account management-policy create · az storage account blob-service-properties update --enable-versioning true · az storage blob set-tier",
+ items:[
+ X("Create and configure a container in Blob Storage","Access level: private, blob, container. Disable anonymous access at the account level.","blobs"),
+ X("Configure storage tiers","Hot, cool, cold, archive. Archive is offline and needs rehydration, which can take hours. Early deletion windows are 30, 90 and 180 days for cool, cold and archive.","blobs"),
+ X("Configure blob lifecycle management","Rules on last modified or last accessed, filter by prefix or blob index tag, actions to tier down or delete.","lifecycle"),
+ X("Configure blob versioning","Required for object replication and point-in-time restore. Old versions cost storage.","blobs"),
+ X("Configure object replication","Asynchronous copy between accounts. Needs versioning on both and change feed on the source.","blobs"),
+ D("Blob soft delete, container soft delete, point-in-time restore","Layers of data protection and what each recovers.","blobs"),
+ V("Watch: blob tiers, lifecycle and replication","Azure Blob Storage access tiers lifecycle management object replication"),
+ B("Lab: lifecycle rule (cool at 30 days, archive at 90, delete at 365), versioning, replication to a second account",null,null),
+ Q("Recall: what two settings must exist before object replication works?",null,null),
+ A("Pick tiers and retention for logs, backups and user uploads. Show the cost logic",null,null)
+]},
+
+{n:12,title:"Azure Files, AzCopy, File Sync, storage checkpoint",dom:"st",plan:STD,
+ drill:"azcopy login · azcopy copy --recursive · azcopy sync · az storage share-rm create · az storage share snapshot",
+ items:[
+ X("Create and configure a file share in Azure Storage","SMB and NFS, performance tiers, quota, mounting over port 445 on Windows and Linux.","files"),
+ X("Configure snapshots and soft delete for Azure Files","Share snapshots are read-only point-in-time copies. Soft delete for shares keeps deleted shares for a retention period.","files"),
+ X("Manage data with Storage Explorer and AzCopy","azcopy copy, sync and login. SAS or Entra authentication. --recursive and --delete-destination.","azcopy"),
+ D("Azure File Sync","Sync group, cloud endpoint, server endpoint, cloud tiering. The hybrid replacement for a file server.","filesync"),
+ D("Offline transfer: Data Box and Import/Export","Choose by data size and bandwidth.","storage"),
+ V("Watch: Azure Files and File Sync","Azure Files File Sync cloud tiering explained"),
+ B("Lab: file share with a snapshot, delete and restore a file, mount from a VM, azcopy sync a folder",null,null),
+ Q("Checkpoint: 20 practice questions on storage. Log every miss in your notes file",null,"pa"),
+ A("Choose storage for backups, archives, shared app files and VM disks. Justify each on access pattern and cost",null,null)
+]},
+
+{n:13,title:"ARM templates and Bicep",dom:"co",plan:STD,
+ drill:"az deployment group create / what-if · az bicep build / decompile · az group export",
+ items:[
+ X("Interpret an ARM template or a Bicep file","ARM: schema, parameters, variables, resources, outputs. Bicep: param, var, resource, module, output. Dependencies come from references or dependsOn.","bicep"),
+ X("Modify an existing ARM template","Add a parameter, change a SKU, add a resource with the correct apiVersion.","arm"),
+ X("Modify an existing Bicep file","Add a loop, a condition, a module reference.","bicep"),
+ X("Deploy resources by using an ARM template or a Bicep file","Scopes: resource group, subscription, management group, tenant. Incremental (default) vs complete mode. Always run what-if.","arm"),
+ X("Export a deployment as ARM or convert ARM to Bicep","Export template from a resource group or deployment. az bicep decompile converts JSON to Bicep.","bicep"),
+ D("Parameter files, modules and template specs","How a team shares and versions templates.","bicep"),
+ V("Watch: Bicep and ARM templates","Azure Bicep ARM templates deployment tutorial AZ-104"),
+ B("Lab: Bicep for a VNet and NSG, deploy with what-if, export the group as ARM, decompile to Bicep",null,null),
+ Q("Recall: incremental vs complete mode, and what each does to resources not in the template",null,null),
+ A("Describe how templates move from dev to prod, and how you catch drift",null,null)
+]},
+
+{n:14,title:"Virtual machines: create, size, disks",dom:"co",plan:STD,
+ drill:"az vm create · az vm resize · az vm deallocate · az vm disk attach · az disk update --size-gb",
+ items:[
+ X("Create a virtual machine","Image, size, disks, NIC, NSG, public IP, boot diagnostics, auto-shutdown. Portal, PowerShell and CLI.","vm"),
+ X("Manage virtual machine sizes","Families (B, D, E, F, N, M). Resize can force a restart or a deallocate. Regional vCPU quota per family.","vm"),
+ X("Manage virtual machine disks","Standard HDD, Standard SSD, Premium SSD, Premium SSD v2, Ultra. Host caching modes, snapshots, shared disks, expanding disks.","disks"),
+ D("Azure Compute Gallery and image versions","How golden images are built and replicated across regions.","vm"),
+ D("Spot VMs, Dedicated Hosts, reservations, Hybrid Benefit","Cost and licensing levers for IaaS.","cost"),
+ V("Watch: Azure VMs, sizes and managed disks","Azure virtual machines sizes managed disks AZ-104"),
+ B("Lab: create a Windows and a Linux VM, resize one, add and expand a data disk, take a snapshot",null,null),
+ Q("Recall: which disk types can be used as an OS disk? What does stopping from inside the guest do to billing?",null,null),
+ A("Write a sizing and build standard: series per workload type, disk choice, naming, tags, image source",null,null)
+]},
+
+{n:15,title:"VM encryption, moves, zones and sets",dom:"co",plan:STD,
+ drill:"az vm encryption enable · az vm availability-set create · az vm create --zone 1 · az resource move",
+ items:[
+ X("Configure Azure Disk Encryption","BitLocker on Windows, DM-Crypt on Linux. The Key Vault must be in the same region and enabled for disk encryption.","ade"),
+ X("Move a VM to another resource group, subscription or region","Resource group or subscription: Move. Region: Azure Resource Mover or Site Recovery. Disks, NICs and IPs move with it.","resmover"),
+ X("Deploy VMs to availability zones and availability sets","Sets spread across fault and update domains (99.95% for two or more VMs). Zones give 99.99%. Placement is chosen at creation, so plan it up front.","avail"),
+ D("Disk encryption options compared","ADE vs server-side encryption with platform or customer keys vs encryption at host. Know which covers temp disks and caches.","ade"),
+ D("Proximity placement groups and capacity reservations","When latency or guaranteed capacity matters.","vm"),
+ V("Watch: availability zones, sets and disk encryption","Azure availability zones availability sets disk encryption explained"),
+ B("Lab: encrypt a VM with ADE, deploy a VM into zone 1, move a VM to another resource group",null,null),
+ Q("Recall: SLA and failure scope of a single VM, an availability set, zones and a paired region",null,null),
+ A("Pick resilience for web, app and database tiers. State RPO, RTO and the cost of each choice",null,"waf")
+]},
+
+{n:16,title:"Scale sets, patching, extensions",dom:"co",plan:STD,
+ drill:"az vmss create · az monitor autoscale create · az vm extension set · az vm run-command invoke",
+ items:[
+ X("Deploy and configure Virtual Machine Scale Sets","Flexible vs uniform orchestration. Autoscale on metrics or schedule, min/max/default counts, scale-in policy, health extension, rolling upgrades.","vmss"),
+ D("Update Manager","Assess and schedule patches with maintenance configurations. Works for Arc-enabled servers too.","um"),
+ D("Extensions, cloud-init and Run Command","Custom Script Extension, Desired State, and when to use Run Command instead.","vm"),
+ D("Azure Arc and Azure Local","How on-prem and HCI servers are projected into Azure for policy, monitoring and patching.","arc"),
+ V("Watch: Virtual Machine Scale Sets and autoscale","Azure Virtual Machine Scale Sets autoscale flexible orchestration"),
+ B("Lab: scale set with CPU autoscale (out above 70, in below 30), a scheduled patch run in Update Manager",null,null),
+ Q("Recall: scale up vs scale out, and what makes a scale set instance count change",null,null),
+ A("Design patching for 300 servers across Azure and on-prem: rings, windows, reporting",null,null)
+]},
+
+{n:17,title:"Containers: ACR, ACI, Container Apps",dom:"co",plan:STD,
+ drill:"az acr build · az container create · az containerapp create · az containerapp update --min-replicas",
+ items:[
+ X("Create and manage an Azure container registry","Basic, Standard, Premium. Premium adds geo-replication and private link. Prefer Entra authentication over the admin account.","acr"),
+ X("Provision a container by using Azure Container Instances","Container groups, restart policy, DNS label, VNet deployment, Azure Files mounts.","aci"),
+ X("Provision a container by using Azure Container Apps","Environments, revisions, ingress, secrets, scaling rules (HTTP, CPU, KEDA). Can scale to zero.","aca"),
+ X("Manage sizing and scaling for ACI and Container Apps","CPU and memory per container. Min and max replicas, scale rules.","aca"),
+ D("Which container service? ACI vs Container Apps vs App Service vs AKS vs Functions","Be able to pick one in 30 seconds for a given workload.","arch"),
+ V("Watch: Azure Container Registry, Instances and Container Apps","Azure Container Registry Container Instances Container Apps AZ-104"),
+ B("Lab: build an image in ACR, run it in ACI, deploy to Container Apps with HTTP scaling",null,null),
+ Q("Recall: what does Container Apps give you that ACI does not?",null,null),
+ A("Recommend a container platform for a team new to containers. Say what you would avoid and why",null,"arch")
+]},
+
+{n:18,title:"App Service and compute checkpoint",dom:"co",plan:STD,
+ drill:"az appservice plan create · az webapp create · az webapp deployment slot create / swap · az webapp config hostname add",
+ items:[
+ X("Provision an App Service plan","Region, OS, SKU: Free, Shared, Basic, Standard, Premium, Isolated. The plan is the compute that apps share.","appsvc"),
+ X("Configure scaling for an App Service plan","Scale up changes the SKU. Scale out changes instance count. Autoscale needs Standard or higher.","appsvc"),
+ X("Create an App Service","Runtime stack, publish as code or container, deployment source.","appsvc"),
+ X("Configure certificates and TLS for an App Service","TLS bindings need Basic or higher. App Service managed certificate, HTTPS only, minimum TLS version, SNI SSL.","appsvc"),
+ X("Map an existing custom DNS name to an App Service","CNAME or A record plus a TXT verification record, then add the custom domain.","appsvc"),
+ X("Configure backup for an App Service","Needs a storage account and a Standard or higher plan. Scheduled and on-demand.","appsvc"),
+ X("Configure networking settings for an App Service","VNet integration (outbound), private endpoint (inbound), access restrictions, hybrid connections.","appsvc"),
+ X("Configure deployment slots for an App Service","Standard or higher. Swap, sticky slot settings, traffic percentage for testing in production.","appsvc"),
+ V("Watch: App Service plans, slots and networking","Azure App Service plan deployment slots custom domain TLS"),
+ B("Lab: App Service with a staging slot and swap, custom domain with a managed certificate, VNet integration",null,null),
+ Q("Checkpoint: 20 practice questions on compute. Log every miss in your notes file",null,"pa"),
+ A("Pick PaaS or IaaS for a legacy web app and justify it on cost, control and risk",null,null)
+]},
+
+{n:19,title:"Virtual networks, peering, public IPs",dom:"nw",plan:STD,
+ drill:"az network vnet create · az network vnet subnet create · az network vnet peering create · az network public-ip create --sku Standard",
+ items:[
+ X("Create and configure virtual networks and subnets","Azure keeps 5 addresses in every subnet. Special subnets: GatewaySubnet, AzureBastionSubnet, AzureFirewallSubnet. Subnet delegation.","vnet"),
+ X("Create and configure virtual network peering","Not transitive. Address spaces cannot overlap. Global peering. Allow forwarded traffic, gateway transit, use remote gateways.","peering"),
+ X("Configure public IP addresses","Standard SKU: static, zone-redundant, closed until an NSG allows traffic. Basic SKU public IPs have been retired. IP prefixes.","vnet"),
+ D("IP addressing plan","Use RFC 1918 ranges, avoid overlap with on-prem, size subnets for growth and for special services.","vnet"),
+ V("Watch: Azure virtual networks and peering","Azure virtual network subnets peering explained AZ-104"),
+ B("Lab: two VNets peered with a VM in each, test connectivity, then break it with overlapping ranges to see the error",null,null),
+ Q("Recall: A peers with B and B peers with C. Can A reach C? What would make it work?",null,null),
+ A("Plan address space for three regions and an on-prem site without overlap",null,null)
+]},
+
+{n:20,title:"Routing, NSGs, troubleshooting",dom:"nw",plan:STD,
+ drill:"az network route-table route create · az network nsg rule create · az network watcher show-next-hop · az network watcher test-ip-flow",
+ items:[
+ X("Configure user-defined network routes","Route tables attach to subnets. Next hop types: virtual appliance, gateway, internet, none. Longest prefix wins, then UDR over BGP over system routes.","udr"),
+ X("Create and configure NSGs and application security groups","Lower priority number is evaluated first. Stateful. Applied at subnet and NIC, both must allow. Service tags and ASGs as sources and destinations.","nsg"),
+ X("Evaluate effective security rules in NSGs","NIC blade: Effective security rules. Network Watcher NSG diagnostics shows the rule that matched.","nsg"),
+ X("Troubleshoot network connectivity","Network Watcher: IP flow verify, next hop, effective routes, connection troubleshoot.","nw"),
+ D("Outbound access","Default outbound access is being retired. Use explicit outbound with NAT Gateway, a load balancer rule or a firewall.","nat"),
+ V("Watch: NSGs, UDRs and effective routes","Azure NSG user defined routes effective security rules Network Watcher"),
+ B("Lab: an NSG using an ASG, a UDR through a small NVA, then prove the path with next hop and IP flow verify",null,null),
+ Q("Recall: two NSGs, one on the subnet and one on the NIC. What decides whether traffic gets through?",null,null),
+ A("Design a segmentation model: what lives in which subnet, and which NSG rules each tier gets",null,null)
+]},
+
+{n:21,title:"Bastion, service endpoints, private endpoints",dom:"nw",plan:STD,
+ drill:"az network bastion create · az network vnet subnet update --service-endpoints · az network private-endpoint create · az network private-dns zone create",
+ items:[
+ X("Implement Azure Bastion","AzureBastionSubnet, /26 or larger. SKUs: Developer, Basic, Standard, Premium. No public IP needed on the VM. Native client needs Standard.","bastion"),
+ X("Configure service endpoints for Azure PaaS","Per subnet and per service. Traffic stays on the Microsoft backbone, but the service keeps its public IP. Pairs with storage firewall VNet rules.","svcep"),
+ X("Configure private endpoints for Azure PaaS","A NIC with a private IP in your subnet, per sub-resource (blob, file, and so on). Needs a private DNS zone such as privatelink.blob.core.windows.net. On-prem needs DNS forwarding.","pe"),
+ D("Private Link and DNS","Most failed private endpoint labs are DNS. Know how the name resolves from inside and outside the VNet.","pe"),
+ V("Watch: Bastion, service endpoints and private endpoints","Azure Bastion service endpoints private endpoint private DNS explained"),
+ B("Lab: private endpoint to a storage account with a private DNS zone, check name resolution from a VM, connect through Bastion",null,null),
+ Q("Recall: list five differences between a service endpoint and a private endpoint",null,null),
+ A("Decide how you expose a storage account and a SQL database to an internal app, and why",null,null)
+]},
+
+{n:22,title:"Azure DNS and load balancing",dom:"nw",plan:STD,
+ drill:"az network dns zone create · az network dns record-set a add-record · az network lb create · az network lb probe create · az network lb rule create",
+ items:[
+ X("Configure Azure DNS","Public zones and delegation. Private zones, VNet links, auto-registration. Record types and alias records.","dns"),
+ X("Configure an internal or public load balancer","Standard SKU. Frontend IP, backend pool, health probe, rules, inbound NAT rules, outbound rules. Session persistence, HA ports.","lb"),
+ X("Troubleshoot load balancing","Failing probes, NSG blocking the AzureLoadBalancer tag, host firewall, backend in the wrong subnet, internal LB hairpin limits.","lb"),
+ D("Which balancer? Load Balancer (L4, regional), Application Gateway (L7, WAF), Front Door (L7, global), Traffic Manager (DNS, global)","Be able to answer this as a table.","agw"),
+ D("Azure DNS Private Resolver","Hybrid name resolution without DNS VMs.","dns"),
+ V("Watch: Azure DNS and load balancing options","Azure DNS private zones Azure Load Balancer Application Gateway Front Door comparison"),
+ B("Lab: public Standard load balancer with two VMs and a probe, a private zone with auto-registration, an alias record",null,null),
+ Q("Recall: why does a backend VM show unhealthy when the app is running?",null,null),
+ A("Design ingress for a public app: Front Door, Application Gateway with WAF, or Load Balancer. Justify the choice",null,"arch")
+]},
+
+{n:23,title:"Hybrid connectivity, hub-spoke, networking checkpoint",dom:"nw",plan:STD,
+ drill:"az network vnet-gateway create · az network firewall create · az network nat gateway create · az network vhub create",
+ items:[
+ D("VPN Gateway vs ExpressRoute","Site-to-site and point-to-site, SKUs, active-active, private and Microsoft peering. Know what each does when the other fails.","vpn"),
+ D("Hub-and-spoke vs Virtual WAN","Where Azure Firewall or an NVA sits, and how 0.0.0.0/0 is forced through it.","vwan"),
+ D("Azure Firewall vs NSG vs NVA","Rule types, SKUs, forced tunnelling, DNS proxy.","firewall"),
+ D("NAT Gateway","Predictable outbound IPs and scale. Where it attaches.","nat"),
+ V("Watch: hub-and-spoke, VPN, ExpressRoute and Virtual WAN","Azure hub and spoke VPN Gateway ExpressRoute Virtual WAN explained"),
+ B("Lab: hub and two spokes peered, route spoke traffic through the hub, test with next hop",null,null),
+ Q("Checkpoint: 20 practice questions on networking. Log every miss in your notes file",null,"pa"),
+ A("Design connectivity for three regions and an on-prem site: hub-and-spoke or Virtual WAN, and why",null,"vwan")
+]},
+
+{n:24,title:"Azure Monitor: metrics, logs, KQL",dom:"mo",plan:STD,
+ drill:"az monitor diagnostic-settings create · az monitor log-analytics workspace create · KQL: Perf | where CounterName == \"% Processor Time\" | summarize avg(CounterValue) by bin(TimeGenerated, 5m), Computer",
+ items:[
+ X("Interpret metrics in Azure Monitor","Metrics Explorer, aggregation, dimensions and splitting. Platform metrics are collected automatically and kept 93 days.","monitor"),
+ X("Configure log settings in Azure Monitor","Diagnostic settings send to Log Analytics, storage, Event Hubs or a partner. The Activity log is subscription-level and kept 90 days unless exported.","monitor"),
+ X("Query and analyze logs in Azure Monitor","KQL: where, project, summarize, join, top, render timechart, ago(). Tables such as AzureActivity, Perf, Heartbeat, Event, Syslog.","monitor"),
+ D("Azure Monitor Agent and data collection rules","The older Log Analytics agent is retired. Know how a DCR picks what to collect and where it goes.","monitor"),
+ D("Log Analytics cost","Ingestion volume, retention, commitment tiers, basic logs. Estimate it in the pricing calculator.","calc"),
+ V("Watch: Azure Monitor, Log Analytics and KQL","Azure Monitor Log Analytics KQL basics tutorial"),
+ B("Lab: workspace, send the Activity log and a VM's logs to it, write five KQL queries",null,null),
+ Q("Recall: where does each log type go by default, and what must you configure to keep it longer?",null,null),
+ A("Design the workspace layout for 3 subscriptions: one or many workspaces, access control, retention",null,"waf")
+]},
+
+{n:25,title:"Alerts, insights, Network Watcher",dom:"mo",plan:STD,
+ drill:"az monitor metrics alert create · az monitor action-group create · az network watcher connection-monitor create",
+ items:[
+ X("Set up alert rules, action groups and alert processing rules","Alert types: metric, log search, activity log. Action groups: email, SMS, webhook, ITSM, Logic App, Automation. Processing rules suppress or route, for example during maintenance.","alerts"),
+ X("Configure and interpret Azure Monitor Insights","VM insights with Azure Monitor Agent and a data collection rule, Storage insights, Network insights.","monitor"),
+ X("Use Azure Network Watcher and Connection Monitor","Topology, IP flow verify, next hop, packet capture, flow logs, Connection Monitor tests between endpoints.","nw"),
+ D("Application Insights, workbooks, Service Health, Resource Health","What each answers during an incident.","monitor"),
+ V("Watch: Azure Monitor alerts, VM insights and Network Watcher","Azure Monitor alerts action groups VM insights Network Watcher Connection Monitor"),
+ B("Lab: CPU metric alert with an action group, an alert processing rule for a maintenance window, Connection Monitor between two VMs",null,null),
+ Q("Recall: metric alert vs log alert vs activity log alert. Give one example of each",null,null),
+ A("Design alert routing for 200 VMs: severity levels, who gets paged, what is only reported",null,"waf")
+]},
+
+{n:26,title:"Azure Backup",dom:"mo",plan:STD,
+ drill:"az backup vault create · az backup protection enable-for-vm · az backup restore restore-disks · az backup policy list",
+ items:[
+ X("Create a Recovery Services vault","Must be in the same region as what it protects. Set redundancy (LRS, GRS, ZRS) before the first backup. Cross-region restore needs GRS.","rsv"),
+ X("Create an Azure Backup vault","The newer vault type for workloads such as blobs, disks, PostgreSQL and AKS. Know which workloads go to which vault.","backup"),
+ X("Create and configure a backup policy","Schedule, instant restore snapshot days, daily, weekly, monthly and yearly retention. Enhanced policy for multiple backups a day.","backup"),
+ X("Perform backup and restore operations by using Azure Backup","Restore as new VM, replace existing, restore disks, or recover files. Soft delete keeps deleted backup data. MARS agent for on-prem files, MABS for servers.","backup"),
+ X("Configure and interpret reports and alerts for backups","Reports need diagnostic settings to Log Analytics. Built-in alerts and Backup center.","backup"),
+ D("Backup security","Soft delete, immutable vaults, multi-user authorization. What stops a ransomware actor deleting your backups.","backup"),
+ V("Watch: Azure Backup, Recovery Services vault and policies","Azure Backup Recovery Services vault backup policy restore VM"),
+ B("Lab: vault, VM backup policy, run a backup, file-level restore, restore as a new VM",null,null),
+ Q("Recall: Recovery Services vault vs Backup vault. Which workloads go in which?",null,null),
+ A("Design backup for a 3-tier app: frequency, retention, vault redundancy, restore test cadence",null,null)
+]},
+
+{n:27,title:"Site Recovery and monitor checkpoint",dom:"mo",plan:STD,
+ drill:"az site-recovery · Start-AzRecoveryServicesAsrTestFailoverJob · Get-AzRecoveryServicesAsrReplicationProtectedItem",
+ items:[
+ X("Configure Azure Site Recovery for Azure resources","Vault in the target region. Mobility service, cache storage account, target network and group. Replication policy and recovery plans.","asr"),
+ X("Perform a failover to a secondary region by using Site Recovery","Test failover in an isolated network, failover, commit, reprotect, failback. Know RPO vs RTO.","asr"),
+ D("Backup vs replication vs high availability","Pick by RPO and RTO per tier and be able to cost it.","asr"),
+ D("DR for hybrid and Azure Local","What Azure Site Recovery covers for on-prem and what you use instead.","local"),
+ V("Watch: Azure Site Recovery failover and failback","Azure Site Recovery VM replication test failover recovery plan"),
+ B("Lab: replicate a VM to the paired region, run a test failover, clean up",null,null),
+ Q("Checkpoint: 20 practice questions on monitor, backup and recovery. Log every miss in your notes file",null,"pa"),
+ A("Write the DR design for a three-tier app with RPO 15 minutes and RTO 1 hour: services, regions, test plan",null,"waf")
+]},
+
+{n:28,title:"Security, migration and cross-domain revision",dom:"rev",
+ plan:[["Read Defender and Migrate",60],["Watch a video",40],["Redo weak labs",70],["Cheat sheet and outline check",50]],
+ drill:"Rule: if you cannot explain it aloud in two minutes, it is not done.",
+ items:[
+ D("Defender for Cloud","Secure score, Defender for Servers, just-in-time VM access, regulatory compliance.","defender"),
+ D("Azure Migrate","Discovery, assessment, right-sizing, replication and cutover. Know how a wave plan uses assessment groups.","migrate"),
+ V("Watch: Defender for Cloud and Azure Migrate overview","Microsoft Defender for Cloud Azure Migrate overview"),
+ Q("Build a one-page cheat sheet","NSG evaluation, route precedence, SAS types, redundancy options, policy effects, vault types, load balancer tiers.",null),
+ Q("Walk the skills outline and tick only what you can explain aloud","Anything you cannot explain goes on Day 29's list.","exam"),
+ B("Redo the two labs you found hardest, without notes",null,null),
+ A("Write a one-page answer: on-prem vs Azure vs Azure Local for a given workload, with the deciding factors",null,"local")
+]},
+
+{n:29,title:"Full practice exam and review",dom:"rev",
+ plan:[["Timed practice exam",100],["Review every miss",100],["Re-read weak docs",40]],
+ drill:"Rule: for each miss, write one sentence in your own words saying what the right answer depends on.",
+ items:[
+ Q("Take Microsoft's practice assessment under timed conditions","No notes, no pausing.","pa"),
+ Q("Review every wrong answer and every guess","Open the linked docs for each. Write the rule in your own words.",null),
+ Q("Open the exam sandbox and try each question style","Shows the interface before the real thing.","sandbox"),
+ Q("List your five weakest topics",null,null),
+ B("Rebuild one weak area from scratch in the portal without notes",null,null)
+]},
+
+{n:30,title:"Weak areas, second practice, exam logistics",dom:"rev",
+ plan:[["Weak-area docs",80],["Second practice test",60],["Videos on weak topics",40],["Logistics and recap",40]],
+ drill:"No new topics today. Sleep matters more than another chapter.",
+ items:[
+ Q("Study the five weak topics from yesterday using the linked Learn pages",null,null),
+ V("Watch one video on your weakest topic","AZ-104 exam tips weak topics Azure Administrator","Pick the single topic that cost you the most marks."),
+ Q("Take a second practice test (a different set from Day 29)","Aim to clear 80% with margin.",null),
+ Q("Exam logistics","ID that matches your registration. Online proctoring needs a clear desk and a system test beforehand. Confirm your slot.","exam"),
+ B("Run one last end-to-end lab: Bicep deploy, peering, private endpoint, backup",null,null),
+ A("Pick two AZ-305 topics to start with after the exam",null,"az305")
+]}
+];
+
+var P2=[
+{g:"Design identity, governance and monitoring",w:"25–30%",items:[
+ ["Recommend a logging, log routing and monitoring solution","Log Analytics workspace design, Event Hubs for SIEM export, retention and cost.","monitor"],
+ ["Authentication, identity management and authorization","Entra options, external identities, authorizing to Azure and on-prem, secrets, certificates and keys in Key Vault or Managed HSM.","entra"],
+ ["Governance structure and compliance","Management groups, subscriptions, resource groups, tagging strategy, Policy for compliance, identity governance (PIM, access reviews, entitlement management).","mg"]
+]},
+{g:"Design data storage solutions",w:"20–25%",items:[
+ ["Relational data","Service choice (SQL Database, Managed Instance, SQL on VM, PostgreSQL, MySQL), service and compute tier, scalability, data protection.","arch"],
+ ["Semi-structured and unstructured data","Blob, Files, Cosmos DB, Data Lake. Balance features, performance and cost. Protection and durability.","storage"],
+ ["Data integration and analysis","Data Factory, Synapse and Fabric, Databricks, Stream Analytics. Pick by pattern.","arch"]
+]},
+{g:"Design business continuity solutions",w:"15–20%",items:[
+ ["Backup and disaster recovery","Meet recovery objectives for Azure and hybrid workloads. Compute, databases, unstructured data.","asr"],
+ ["High availability","Compute, relational data, and semi/unstructured data. Zones, regions, replicas, failover groups.","waf"]
+]},
+{g:"Design infrastructure solutions",w:"30–35%",items:[
+ ["Compute","VM-based, container-based, serverless, batch. Components picked from workload requirements.","arch"],
+ ["Application architecture","Messaging, event-driven, API integration, caching, app configuration, automated deployment.","arch"],
+ ["Migrations","Cloud Adoption Framework migration, assess servers, data and apps, IaaS vs PaaS targets, database and unstructured data migration. Maps to your wave-plan interview answers.","migrate"],
+ ["Network solutions","Internet connectivity, on-prem connectivity, performance, security, load balancing and routing.","vwan"]
+]}
+];
+
+var LS="az104-tracker-v2";
+var DOC="progress30";
+var state={done:{},notes:{},start:"2026-11-06"};
+var filter="all";
+var db=null,uid=null,timer=null,saving=false;
+
+function loadLocal(){try{var s=localStorage.getItem(LS);if(s){var o=JSON.parse(s);if(o&&o.done){state.done=o.done;state.notes=o.notes||{};state.start=o.start||state.start}}}catch(e){}}
+function setStatus(t){var e=document.getElementById("status");if(e)e.textContent=t}
+function persist(){try{localStorage.setItem(LS,JSON.stringify(state))}catch(e){}
+  clearTimeout(timer);timer=setTimeout(flush,700)}
+function flush(){
+  if(!db||!uid){setStatus("Saved on this device");return}
+  if(saving){clearTimeout(timer);timer=setTimeout(flush,400);return}
+  saving=true;
+  db.doc("data/users/"+uid+"/"+DOC).set({done:state.done,notes:state.notes,start:state.start}).then(function(){setStatus("Saved to your account")},function(){setStatus("Saved on this device only")}).then(function(){saving=false});
+}
+
+function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
+function dayDate(n){var p=(state.start||"2026-11-06").split("-");return new Date(+p[0],+p[1]-1,+p[2]+n-1)}
+var MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],WD=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+function fmt(d){return WD[d.getDay()]+" "+d.getDate()+" "+MON[d.getMonth()]}
+function sameDay(a,b){return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate()}
+function mins(plan){var s=0;plan.forEach(function(p){s+=p[1]});return s}
+function hrs(m){return (m/60).toFixed(1).replace(/\.0$/,"")}
+var TAGNAME={x:"Exam",d:"Depth",l:"Lab",q:"Recall",a:"Architect",v:"Watch"};
+
+function itemId(day,i){return day+"."+i}
+function renderItem(id,it,list){
+  var li=el("li","it"+(state.done[id]?" is-done":""));li.dataset.id=id;li.dataset.t=it.t;
+  var lab=el("label");var cb=document.createElement("input");cb.type="checkbox";cb.id="c-"+id.replace(/\./g,"-");cb.checked=!!state.done[id];
+  var tag=el("span","tag t-"+it.t,TAGNAME[it.t]);
+  var tx=el("span","tx");tx.appendChild(el("b",null,it.tx));if(it.n)tx.appendChild(el("small",null,it.n));
+  lab.appendChild(cb);lab.appendChild(tag);lab.appendChild(tx);li.appendChild(lab);
+  var lks=el("div","lks");
+  var h=href(it.k);if(h){var a=el("a","lk","Learn ↗");a.href=h;a.target="_blank";a.rel="noopener";lks.appendChild(a)}
+  if(it.q){var y=el("a","lk","YouTube ↗");y.href="https://www.youtube.com/results?search_query="+encodeURIComponent(it.q);y.target="_blank";y.rel="noopener";lks.appendChild(y)}
+  if(lks.children.length)li.appendChild(lks);
+  cb.addEventListener("change",function(){
+    if(cb.checked)state.done[id]=1;else delete state.done[id];
+    li.classList.toggle("is-done",cb.checked);persist();update()});
+  list.appendChild(li);
+}
+
+function phaseRange(dom){var a=0,b=0;DAYS.forEach(function(d){if(d.dom===dom){if(!a)a=d.n;b=d.n}});return a===b?"Day "+a:"Days "+a+"–"+b}
+function phaseWeight(dom){var m=DOMAINS.filter(function(x){return x.id===dom})[0];return m?" · exam weight "+m.w:""}
+
+var dayEls={};
+function renderDays(){
+  var host=document.getElementById("days");host.textContent="";dayEls={};
+  var strip=document.getElementById("strip");strip.textContent="";
+  var today=new Date(),prev=null;
+  DAYS.forEach(function(d){
+    var chip=el("a","chip","D"+d.n);chip.href="#day-"+d.n;chip.id="chip-"+d.n;strip.appendChild(chip);
+    chip.addEventListener("click",function(e){e.preventDefault();var det=document.getElementById("day-"+d.n);det.open=true;det.scrollIntoView({block:"start"})});
+    if(d.dom!==prev){
+      var ph=el("div","grp phase");ph.appendChild(el("span",null,PH[d.dom]));ph.appendChild(el("em",null,phaseRange(d.dom)+phaseWeight(d.dom)));host.appendChild(ph);prev=d.dom;
+    }
+    var det=document.createElement("details");det.className="day";det.id="day-"+d.n;
+    var sum=document.createElement("summary");
+    var dn=el("div","dn");dn.appendChild(document.createTextNode("DAY"));dn.appendChild(el("b",null,""+d.n));sum.appendChild(dn);
+    sum.appendChild(el("div","dt",d.title));
+    var dd=dayDate(d.n);
+    sum.appendChild(el("div","dmeta",fmt(dd)+" · "+PH[d.dom]+" · "+hrs(mins(d.plan))+" h"));
+    var cnt=el("div","dcount","");cnt.id="cnt-"+d.n;sum.appendChild(cnt);
+    det.appendChild(sum);
+    var body=el("div","body");
+    var plan=el("div","plan");d.plan.forEach(function(p){plan.appendChild(el("span",null,p[0]+" "+p[1]+" min"))});body.appendChild(plan);
+    if(d.drill)body.appendChild(el("div","drill",d.drill));
+    var ul=el("ul","items");
+    d.items.forEach(function(it,i){renderItem(itemId(d.n,i),it,ul)});
+    body.appendChild(ul);
+    body.appendChild(el("span","nl","My notes and weak spots"));
+    var ta=document.createElement("textarea");ta.id="n-"+d.n;ta.value=state.notes[d.n]||"";
+    ta.setAttribute("aria-label","Notes for day "+d.n);
+    ta.addEventListener("input",function(){if(ta.value)state.notes[d.n]=ta.value;else delete state.notes[d.n];persist()});
+    body.appendChild(ta);
+    det.appendChild(body);host.appendChild(det);dayEls[d.n]=det;
+    if(sameDay(dd,today))chip.classList.add("today");
+  });
+  var f=el("div","filters");
+  [["all","All"],["x","Exam only"],["todo","Not done"]].forEach(function(p){
+    var b=el("button",null,p[1]);b.type="button";b.setAttribute("aria-pressed",filter===p[0]?"true":"false");
+    b.addEventListener("click",function(){filter=p[0];Array.prototype.forEach.call(f.children,function(c,i){c.setAttribute("aria-pressed",["all","x","todo"][i]===filter?"true":"false")});applyFilter()});
+    f.appendChild(b)});
+  strip.appendChild(f);
+}
+function renderP2(){
+  var host=document.getElementById("p2");host.textContent="";
+  P2.forEach(function(g,gi){
+    var h=el("div","grp");h.appendChild(el("span",null,g.g));h.appendChild(el("em",null,g.w));host.appendChild(h);
+    var panel=el("div","panel");panel.style.marginTop="6px";
+    var ul=el("ul","items");
+    g.items.forEach(function(it,i){renderItem("p2."+gi+"."+i,{t:"x",tx:it[0],n:it[1],k:it[2]},ul)});
+    panel.appendChild(ul);host.appendChild(panel);
+  });
+  var pc=el("p","note","AZ-305 progress: ");pc.id="p2prog";host.appendChild(pc);
+}
+function applyFilter(){
+  var lis=document.querySelectorAll("#days .it");
+  Array.prototype.forEach.call(lis,function(li){
+    var hide=false;
+    if(filter==="x"&&li.dataset.t!=="x")hide=true;
+    if(filter==="todo"&&li.classList.contains("is-done"))hide=true;
+    li.classList.toggle("hide",hide);
+  });
+}
+function renderDomains(){
+  var host=document.getElementById("domains");host.textContent="";
+  DOMAINS.forEach(function(d){
+    var w=el("div","dom");var r=el("div","row");r.appendChild(el("span",null,d.name));var em=el("em",null,"");em.id="dm-"+d.id;r.appendChild(em);w.appendChild(r);
+    var bar=el("div","bar");var i=document.createElement("i");i.id="db-"+d.id;bar.appendChild(i);w.appendChild(bar);
+    var wt=el("div","dmeta","Exam weight "+d.w);wt.style.marginTop="4px";w.appendChild(wt);host.appendChild(w);
+  });
+}
+function update(){
+  var xT=0,xD=0,aT=0,aD=0,daysDone=0,mDone=0,mAll=0;
+  var dom={};DOMAINS.forEach(function(d){dom[d.id]=[0,0]});
+  DAYS.forEach(function(d){
+    var t=0,dn=0;mAll+=mins(d.plan);
+    d.items.forEach(function(it,i){
+      var ok=!!state.done[itemId(d.n,i)];t++;aT++;if(ok){dn++;aD++}
+      if(it.t==="x"){xT++;if(ok)xD++;if(dom[d.dom]){dom[d.dom][1]++;if(ok)dom[d.dom][0]++}}
+    });
+    var c=document.getElementById("cnt-"+d.n);if(c)c.textContent=dn+"/"+t;
+    var chip=document.getElementById("chip-"+d.n);
+    if(chip){chip.classList.toggle("done",dn===t);chip.classList.toggle("part",dn>0&&dn<t)}
+    if(dn===t){daysDone++;mDone+=mins(d.plan)}else if(dn>0){mDone+=Math.round(mins(d.plan)*dn/t)}
+  });
+  document.getElementById("t-x").textContent=xD+"/"+xT;
+  document.getElementById("t-all").textContent=aD+"/"+aT;
+  document.getElementById("t-days").textContent=daysDone+"/"+DAYS.length;
+  document.getElementById("t-hrs").textContent=hrs(mDone)+" h";
+  document.getElementById("tothrs").textContent=Math.round(mAll/60);
+  document.getElementById("b-all").style.width=(aT?aD/aT*100:0)+"%";
+  DOMAINS.forEach(function(d){var v=dom[d.id];document.getElementById("dm-"+d.id).textContent=v[0]+"/"+v[1];document.getElementById("db-"+d.id).style.width=(v[1]?v[0]/v[1]*100:0)+"%"});
+  var pT=0,pD=0;P2.forEach(function(g,gi){g.items.forEach(function(_,i){pT++;if(state.done["p2."+gi+"."+i])pD++})});
+  var pp=document.getElementById("p2prog");if(pp)pp.textContent="AZ-305 progress: "+pD+" of "+pT+" objective groups.";
+  if(filter==="todo")applyFilter();
+}
+function openStart(){
+  var today=new Date(),pick=null;
+  DAYS.forEach(function(d){if(pick===null&&sameDay(dayDate(d.n),today))pick=d.n});
+  if(pick===null){DAYS.forEach(function(d){if(pick!==null)return;var all=d.items.every(function(_,i){return state.done[itemId(d.n,i)]});if(!all)pick=d.n})}
+  if(pick===null)pick=1;
+  dayEls[pick].open=true;
+}
+function renderAll(){renderDomains();renderDays();renderP2();update();openStart();
+  var s=document.getElementById("start");s.value=state.start}
+
+loadLocal();renderAll();
+document.getElementById("start").addEventListener("change",function(e){
+  if(e.target.value){state.start=e.target.value;persist();renderDays();applyFilter();update();openStart()}});
+setStatus("Saved on this device");
+
+if(window.claude&&window.claude.use){
+  Promise.all([window.claude.use("db"),window.claude.use("user")]).then(function(r){
+    var d=r[0],u=r[1];if(!d||!u)return null;
+    return u.id().then(function(id){if(!id)return null;db=d;uid=id;
+      return d.doc("data/users/"+id+"/"+DOC).get().then(function(snap){
+        if(snap.exists){var o=snap.data()||{};
+          state.done=o.done||{};state.notes=o.notes||{};state.start=o.start||state.start;
+          try{localStorage.setItem(LS,JSON.stringify(state))}catch(e){}
+          renderAll();setStatus("Saved to your account");
+        }else{
+          var any=false;for(var k in state.done){any=true;break}
+          if(any)flush();else setStatus("Saved to your account")
+        }
+      })})
+  }).catch(function(){});
+}
+})();
+</script>
+
+</body></html>
